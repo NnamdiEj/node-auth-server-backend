@@ -4,6 +4,8 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var sassMiddleware = require('node-sass-middleware');
+const mongoose = require('mongoose');
+const { mongoURI } = require('./config/keys');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -13,6 +15,13 @@ var app = express();
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
+
+// Create connection to MongoDB
+mongoose
+    .connect(mongoURI, { useNewUrlParser: true })
+    .then(() => console.log('MongoDB successfully connected'))
+    .catch(err => console.log(err));
+
 
 app.use(logger('dev'));
 app.use(express.json());
