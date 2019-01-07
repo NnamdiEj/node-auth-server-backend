@@ -5,10 +5,12 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var sassMiddleware = require('node-sass-middleware');
 const mongoose = require('mongoose');
+const passport = require('passport');
 const { mongoURI } = require('./config/keys');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
+const apiUsersRouter = require("./routes/api/users");
 
 var app = express();
 
@@ -35,8 +37,14 @@ app.use(sassMiddleware({
 }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Initialize and configure passport module
+app.use(passport.initialize());
+require('./config/passport')(passport);
+
+// Mount routers
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
+app.use('/api/auth', apiUsersRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

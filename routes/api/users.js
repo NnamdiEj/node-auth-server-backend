@@ -4,15 +4,55 @@ var router = express.Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const passport = require('passport');
-const { check, validationResult } = require('express-validator/check');
+const { body, check, validationResult } = require('express-validator/check');
 const { matchedData } = require('express-validator/filter');
 
-const keys = require('../config/keys');
+const keys = require('../../config/keys');
 const User = require('../../models/User');
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
     res.render('index', { title: 'Express' });
+});
+
+router.post('/login', [
+            check('email')
+                .isLength({ min: 1 })
+                .withMessage('Please enter your email')
+                .isEmail()
+                .withMessage('Please enter a valid email')
+                .normalizeEmail(),
+            check('password')
+                .isLength({ min: 1 })
+                .withMessage('Please enter your password')
+                .escape()
+        ], function(req,res,next) {
+
+    User.authenticate(req.body.email, req.body.password, function(error, user) {
+
+        // Handle incorrect credentials and any other errors
+        // by creating error and forwarding it to error handler
+        if (error || !user) {
+            const err = new Error('Wrong email or password');
+            err.status = 401;
+            return next(err);
+        } else { // Otherwise create jwt using creds
+
+            // Create payload
+            const payload = {
+                id: user._id,
+                name: user.name
+            };
+
+            // Sign token
+            jwt.sign(payload, keys.secretOrKey, { expiresIn: 3600 }, (error, token) => {
+                res.json({
+                    success: true,
+                    token: "Bearer " + token
+                });
+            });
+        }
+    });
 });
 
 router.post('/register', [
@@ -40,6 +80,7 @@ router.post('/register', [
                     if (value !== req.body.password) {
                         throw new Error('Passwords do not match');
                     }
+                    return true;
                 })
                 .escape()
         ], function(req,res,next) {
@@ -65,9 +106,7 @@ router.post('/register', [
         });
 
     } else { // Invalid form submission
-        const err = new Error('All fields required');
-        err.status = 400;
-        return next(err);
+        res.status(400).json(errors.mapped());
     }
 });
 
